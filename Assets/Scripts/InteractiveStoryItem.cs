@@ -7,6 +7,7 @@ public sealed class InteractiveStoryItem : ScriptableObject {
     public bool EndGame = false;
     public bool GiveItem = false;
     public string ItemName = "Item";
+    public bool OneTimeVisit = false;
 
     [TextArea(3, 20)]
     public string StoryInfo = "";
@@ -19,6 +20,8 @@ public sealed class InteractiveStoryItem : ScriptableObject {
         public InteractiveStoryItem pointsTo;
         public bool UseItemBranch = false;
         public ItemBranchedChoice ItemBranch;
+        public HistoryCascade cascades;
+        public bool Disabled = false;
     }
 
     [System.Serializable]

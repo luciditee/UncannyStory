@@ -8,8 +8,10 @@ public class InteractiveStorySystem : MonoBehaviour {
     public Transform choiceHolder;
     public Transform choiceButtonPrefab;
     public InteractiveStoryItem startingItem;
+    public HistoryCascade[] cascadesToReset;
 
     public List<string> inventory = new List<string>();
+    private List<InteractiveStoryItem> storyHistory = new List<InteractiveStoryItem>();
 
     private static InteractiveStorySystem self;
     private InteractiveStoryItem currentItem;
@@ -17,7 +19,18 @@ public class InteractiveStorySystem : MonoBehaviour {
 	// Use this for initialization
 	void Awake () {
         self = this;
+        StartOver();
+    }
+
+    // Start the story over.
+    public void StartOver() {
         currentItem = startingItem;
+
+        // Reset all tracked history cascades to prevent nullreferences.
+        foreach (HistoryCascade cascade in cascadesToReset) {
+            cascade.clickCounter = 0;
+        }
+
         SetupElements();
     }
 
@@ -33,6 +46,14 @@ public class InteractiveStorySystem : MonoBehaviour {
         // Spawn them one at a time
         int index = 0;
         foreach (InteractiveStoryItem.StoryChoice item in currentItem.choices) {
+            // Skip previously visited onetime destinations, or null (removed) destinations
+            if ((item.Disabled == true && (item.cascades == null || item.cascades.historyCascades.Length == 0)) || (storyHistory.Contains(item.pointsTo) && item.pointsTo.OneTimeVisit)) {
+                index++;
+                continue;
+            }
+                    
+
+            // Create the choice button
             Transform inst = Instantiate(choiceButtonPrefab, choiceHolder);
 
             // Assign text
@@ -43,9 +64,15 @@ public class InteractiveStorySystem : MonoBehaviour {
             // Increment choice index
             index++;
         }
+
+        // Record this item to history
+        storyHistory.Add(currentItem);
     }
 
     void RefreshStory(int choice) {
+        // Store this for later
+        bool useCascades = (currentItem.choices[choice].cascades != null);
+
         // In the event the story branches based on the player having an item, like a key,
         // perform the branch.
         if (currentItem.choices[choice].UseItemBranch) {
@@ -62,8 +89,24 @@ public class InteractiveStorySystem : MonoBehaviour {
                 currentItem = currentItem.choices[choice].ItemBranch.withoutItem;
             }
         } else {
-            // No item branching, simply go to the next story point.
-            currentItem = currentItem.choices[choice].pointsTo;
+            // No item branching if we're here.
+            if (useCascades) {
+                // If this branch has cascades, we should increment the cascade value.
+                // Cache it first
+                HistoryCascade cascades = currentItem.choices[choice].cascades;
+                cascades.clickCounter++;
+
+                // Bounds checking so it never exceeds sizeof(cascades.clickCounter)
+                if (cascades.clickCounter >= cascades.historyCascades.Length) {
+                    cascades.clickCounter = cascades.historyCascades.Length - 1;
+                }
+
+                // Jump to the next story bit
+                currentItem = cascades.historyCascades[cascades.clickCounter];
+            } else {
+                // No cascades, simply proceed to the next one.
+                currentItem = currentItem.choices[choice].pointsTo;
+            }
         }
         
         // Set up the UI to reflect the change.
