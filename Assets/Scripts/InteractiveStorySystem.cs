@@ -9,6 +9,9 @@ public class InteractiveStorySystem : MonoBehaviour {
     public Transform choiceButtonPrefab;
     public InteractiveStoryItem startingItem;
     public HistoryCascade[] cascadesToReset;
+    public AudioSource loopingSource;
+    public AudioSource oneShotSource;
+    public Image BackgroundElement;
 
     public List<string> inventory = new List<string>();
     private List<InteractiveStoryItem> storyHistory = new List<InteractiveStoryItem>();
@@ -30,6 +33,9 @@ public class InteractiveStorySystem : MonoBehaviour {
         foreach (HistoryCascade cascade in cascadesToReset) {
             cascade.clickCounter = 0;
         }
+
+        // Clear history.
+        storyHistory.Clear();
 
         SetupElements();
     }
@@ -63,6 +69,27 @@ public class InteractiveStorySystem : MonoBehaviour {
 
             // Increment choice index
             index++;
+        }
+
+        // Apply audio loop.
+        // Do not alter looping sound if current sound matches prior sound.
+        if (loopingSource != null && currentItem.LoopSound != null && loopingSource.clip != currentItem.LoopSound) {
+            loopingSource.Stop();
+            loopingSource.clip = currentItem.LoopSound;
+            loopingSource.loop = true; // make sure this is always on.
+            loopingSource.Play();
+        }
+
+        // Apply one-shot sound.
+        if (oneShotSource != null && currentItem.EntrySound != null) {
+            oneShotSource.PlayOneShot(currentItem.EntrySound);
+        }
+
+        // Apply background information.
+        // In the event there is no background, hide the image component entirely.
+        if (BackgroundElement != null) {
+            BackgroundElement.enabled = (currentItem.BackgroundPicture != null);
+            BackgroundElement.sprite = currentItem.BackgroundPicture;
         }
 
         // Record this item to history

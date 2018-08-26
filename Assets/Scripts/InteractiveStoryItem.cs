@@ -8,6 +8,9 @@ public sealed class InteractiveStoryItem : ScriptableObject {
     public bool GiveItem = false;
     public string ItemName = "Item";
     public bool OneTimeVisit = false;
+    public AudioClip LoopSound = null;
+    public AudioClip EntrySound = null;
+    public Sprite BackgroundPicture = null;
 
     [TextArea(3, 20)]
     public string StoryInfo = "";
